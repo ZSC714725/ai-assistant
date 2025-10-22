@@ -1,4 +1,4 @@
-# 七牛云 AI 聊天助手
+# AI 聊天助手
 
 基于 Gin 框架的 HTTP 服务，提供 AI 聊天功能，支持多种模型选择、Markdown 渲染、问答记录和知识库管理。
 
@@ -28,7 +28,7 @@ go mod tidy
 
 ```yaml
 api:
-  base_url: "https://openai.qiniu.com/v1"
+  base_url: "https://api.openai.com/v1"
   api_key: "your-api-key-here"
 
 server:
@@ -181,7 +181,7 @@ go build -o qiniu-ai ai.go
 
 ### config.yaml 配置项
 
-- `api.base_url`: API 基础 URL
+- `api.base_url`: API 基础 URL (支持 OpenAI、Claude 等)
 - `api.api_key`: API 密钥
 - `server.port`: 服务端口
 - `server.host`: 服务主机
@@ -198,7 +198,7 @@ go build -o qiniu-ai ai.go
 ## 项目结构
 
 ```
-qiniu-ai/
+ai-chat-assistant/
 ├── ai.go                    # 主程序文件
 ├── config.yaml             # 配置文件
 ├── data/                   # 数据存储目录
@@ -268,6 +268,7 @@ qiniu-ai/
 ## 注意事项
 
 - 请确保 API 密钥有效且有足够的额度
+- 支持 OpenAI、Claude、DeepSeek 等多种 AI 服务
 - 不同模型有不同的特点和优势，请根据需要选择
 - 支持 Ctrl+Enter 快捷键发送消息
 - 数据文件位于 `data/` 目录，请定期备份
