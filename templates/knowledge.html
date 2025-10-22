@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库 - AI 聊天助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .nav {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 20px;
+            font-weight: 500;
+        }
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            padding: 20px;
+        }
+        .knowledge-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: box-shadow 0.2s;
+        }
+        .knowledge-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .knowledge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        .knowledge-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        .knowledge-meta {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .knowledge-tags {
+            margin-top: 10px;
+        }
+        .tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .knowledge-content {
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .empty-state h3 {
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .stats {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .stat-item {
+            flex: 1;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        blockquote {
+            border-left: 4px solid #667eea;
+            margin: 0;
+            padding: 10px 20px;
+            background: #f8f9fa;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 知识库</h1>
+            <p>管理和查看您的AI知识库</p>
+        </div>
+        
+        <div class="nav">
+            <a href="/">🏠 返回聊天</a>
+            <a href="/api/recent">📝 查看最近问答</a>
+        </div>
+        
+        <div class="content">
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalItems">0</div>
+                    <div class="stat-label">知识条目</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalTags">0</div>
+                    <div class="stat-label">标签数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="recentItems">0</div>
+                    <div class="stat-label">最近添加</div>
+                </div>
+            </div>
+            
+            <div id="knowledgeList">
+                <div class="loading">📖 正在加载知识库...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载知识库数据
+        async function loadKnowledge() {
+            try {
+                const response = await fetch('/api/knowledge');
+                const data = await response.json();
+                
+                if (data.knowledge_base && data.knowledge_base.length > 0) {
+                    displayKnowledge(data.knowledge_base);
+                    updateStats(data.knowledge_base);
+                } else {
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('加载知识库失败:', error);
+                document.getElementById('knowledgeList').innerHTML = 
+                    '<div class="empty-state"><h3>❌ 加载失败</h3><p>无法连接到服务器</p></div>';
+            }
+        }
+        
+        // 显示知识库内容
+        function displayKnowledge(knowledgeBase) {
+            const container = document.getElementById('knowledgeList');
+            
+            if (knowledgeBase.length === 0) {
+                showEmptyState();
+                return;
+            }
+            
+            let html = '';
+            knowledgeBase.forEach(item => {
+                const content = marked.parse(item.content);
+                const tags = item.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+                const date = new Date(item.timestamp).toLocaleString('zh-CN');
+                
+                html += `
+                    <div class="knowledge-item">
+                        <div class="knowledge-header">
+                            <div>
+                                <h3 class="knowledge-title">${item.title}</h3>
+                                <div class="knowledge-meta">
+                                    模型: ${item.model} | 添加时间: ${date}
+                                </div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteItem(${item.id})">删除</button>
+                        </div>
+                        ${tags ? `<div class="knowledge-tags">${tags}</div>` : ''}
+                        <div class="knowledge-content">${content}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 显示空状态
+        function showEmptyState() {
+            document.getElementById('knowledgeList').innerHTML = `
+                <div class="empty-state">
+                    <h3>📚 知识库为空</h3>
+                    <p>还没有任何知识条目，<a href="/">返回聊天页面</a>开始对话并添加知识到库中。</p>
+                </div>
+            `;
+        }
+        
+        // 更新统计信息
+        function updateStats(knowledgeBase) {
+            const stats = document.getElementById('stats');
+            stats.style.display = 'flex';
+            
+            // 总条目数
+            document.getElementById('totalItems').textContent = knowledgeBase.length;
+            
+            // 标签数量
+            const allTags = new Set();
+            knowledgeBase.forEach(item => {
+                item.tags.forEach(tag => allTags.add(tag));
+            });
+            document.getElementById('totalTags').textContent = allTags.size;
+            
+            // 最近添加（今天添加的条目）
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const recentCount = knowledgeBase.filter(item => {
+                const itemDate = new Date(item.timestamp);
+                return itemDate >= today;
+            }).length;
+            document.getElementById('recentItems').textContent = recentCount;
+        }
+        
+        // 删除知识条目
+        async function deleteItem(id) {
+            if (!confirm('确定要删除这个知识条目吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/knowledge/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    // 重新加载知识库
+                    loadKnowledge();
+                } else {
+                    alert('删除失败，请重试');
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败，请重试');
+            }
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadKnowledge();
+        });
+    </script>
+</body>
+</html>

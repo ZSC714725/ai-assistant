@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 聊天助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .chat-container {
+            display: flex;
+            height: 600px;
+        }
+        .input-panel {
+            width: 40%;
+            padding: 20px;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        .output-panel {
+            width: 60%;
+            padding: 20px;
+            background-color: #fafafa;
+            overflow-y: auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .response {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            background: #fee;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+        .model-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        blockquote {
+            border-left: 4px solid #667eea;
+            margin: 0;
+            padding: 10px 20px;
+            background: #f8f9fa;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .qa-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .qa-question {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .qa-answer {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .qa-meta {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .add-to-knowledge {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .add-to-knowledge:hover {
+            background: #5a6fd8;
+        }
+        .add-form {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+        .add-form input, .add-form textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .add-form button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .add-form button:hover {
+            background: #218838;
+        }
+        .cancel-btn {
+            background: #6c757d !important;
+        }
+        .cancel-btn:hover {
+            background: #5a6268 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI 聊天助手</h1>
+            <p>基于七牛云AI服务的智能对话平台</p>
+            <div style="margin-top: 15px;">
+                <a href="/knowledge" style="color: white; text-decoration: none; margin-right: 20px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px;">📚 知识库</a>
+                <button onclick="showRecentQAs()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer;">📝 最近问答</button>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="input-panel">
+                <div class="form-group">
+                    <label for="model">选择模型:</label>
+                    <select id="model">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">输入您的问题:</label>
+                    <textarea id="message" placeholder="请输入您要询问的内容..."></textarea>
+                </div>
+                
+                <button id="submitBtn" onclick="sendMessage()">发送消息</button>
+                
+                <div class="model-info">
+                    <p>💡 提示：不同模型有不同的特点和优势，请根据需要选择合适的模型。</p>
+                </div>
+            </div>
+            
+            <div class="output-panel">
+                <div id="response" class="response">
+                    <h3>欢迎使用 AI 聊天助手！</h3>
+                    <p>请在左侧输入您的问题，然后点击"发送消息"按钮开始对话。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近问答模态框 -->
+    <div id="recentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📝 最近问答记录</h2>
+                <span class="close" onclick="closeRecentModal()">&times;</span>
+            </div>
+            <div id="recentQAsList">
+                <div class="loading">正在加载最近问答...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let availableModels = [];
+        
+        // 加载可用模型
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                availableModels = data.available;
+                
+                const modelSelect = document.getElementById('model');
+                modelSelect.innerHTML = '';
+                
+                // 添加默认选项
+                const defaultOption = document.createElement('option');
+                defaultOption.value = data.default;
+                defaultOption.textContent = data.default + ' (默认)';
+                modelSelect.appendChild(defaultOption);
+                
+                // 添加其他模型
+                data.available.forEach(model => {
+                    if (model !== data.default) {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        modelSelect.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                console.error('加载模型失败:', error);
+                document.getElementById('model').innerHTML = '<option value="">加载失败</option>';
+            }
+        }
+        
+        // 发送消息
+        async function sendMessage() {
+            const message = document.getElementById('message').value.trim();
+            const model = document.getElementById('model').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const responseDiv = document.getElementById('response');
+            
+            if (!message) {
+                alert('请输入您的问题');
+                return;
+            }
+            
+            // 禁用按钮并显示加载状态
+            submitBtn.disabled = true;
+            submitBtn.textContent = '发送中...';
+            responseDiv.innerHTML = '<div class="loading">🤔 AI正在思考中，请稍候...</div>';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        model: model || undefined
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 使用marked.js渲染Markdown
+                    const htmlContent = marked.parse(data.response);
+                    responseDiv.innerHTML = '<div class="response">' +
+                        '<h3>AI 回复:</h3>' +
+                        '<div>' + htmlContent + '</div>' +
+                        '<div class="model-info">使用的模型: ' + data.model + '</div>' +
+                        '</div>';
+                } else {
+                    responseDiv.innerHTML = '<div class="response error">' +
+                        '<h3>❌ 错误</h3>' +
+                        '<p>' + (data.error || '请求失败') + '</p>' +
+                        '</div>';
+                }
+            } catch (error) {
+                responseDiv.innerHTML = '<div class="response error">' +
+                    '<h3>❌ 网络错误</h3>' +
+                    '<p>无法连接到服务器，请检查网络连接。</p>' +
+                    '</div>';
+            } finally {
+                // 恢复按钮状态
+                submitBtn.disabled = false;
+                submitBtn.textContent = '发送消息';
+            }
+        }
+        
+        // 支持回车键发送
+        document.getElementById('message').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                sendMessage();
+            }
+        });
+        
+        // 显示最近问答模态框
+        async function showRecentQAs() {
+            const modal = document.getElementById('recentModal');
+            modal.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/recent');
+                const data = await response.json();
+                
+                if (data.recent_qas && data.recent_qas.length > 0) {
+                    displayRecentQAs(data.recent_qas);
+                } else {
+                    document.getElementById('recentQAsList').innerHTML = 
+                        '<div class="empty-state"><h3>📝 暂无问答记录</h3><p>开始对话后，您的问答记录将显示在这里。</p></div>';
+                }
+            } catch (error) {
+                console.error('加载最近问答失败:', error);
+                document.getElementById('recentQAsList').innerHTML = 
+                    '<div class="empty-state"><h3>❌ 加载失败</h3><p>无法连接到服务器</p></div>';
+            }
+        }
+        
+        // 显示最近问答列表
+        function displayRecentQAs(qas) {
+            const container = document.getElementById('recentQAsList');
+            
+            let html = '';
+            qas.forEach(qa => {
+                const date = new Date(qa.timestamp).toLocaleString('zh-CN');
+                html += `
+                    <div class="qa-item">
+                        <div class="qa-question">❓ ${qa.question}</div>
+                        <div class="qa-answer">${marked.parse(qa.answer)}</div>
+                        <div class="qa-meta">模型: ${qa.model} | 时间: ${date}</div>
+                        <button class="add-to-knowledge" onclick="showAddForm(${qa.id})">📚 添加到知识库</button>
+                        <div class="add-form" id="addForm${qa.id}">
+                            <input type="text" id="title${qa.id}" placeholder="请输入知识标题" required>
+                            <input type="text" id="tags${qa.id}" placeholder="请输入标签（用逗号分隔）">
+                            <button onclick="addToKnowledge(${qa.id})">确认添加</button>
+                            <button class="cancel-btn" onclick="hideAddForm(${qa.id})">取消</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 关闭最近问答模态框
+        function closeRecentModal() {
+            document.getElementById('recentModal').style.display = 'none';
+        }
+        
+        // 显示添加表单
+        function showAddForm(qaId) {
+            document.getElementById(`addForm${qaId}`).style.display = 'block';
+        }
+        
+        // 隐藏添加表单
+        function hideAddForm(qaId) {
+            document.getElementById(`addForm${qaId}`).style.display = 'none';
+        }
+        
+        // 添加到知识库
+        async function addToKnowledge(qaId) {
+            const title = document.getElementById(`title${qaId}`).value.trim();
+            const tags = document.getElementById(`tags${qaId}`).value.trim();
+            
+            if (!title) {
+                alert('请输入知识标题');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/knowledge/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        record_id: qaId,
+                        title: title,
+                        tags: tags
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('已成功添加到知识库！');
+                    hideAddForm(qaId);
+                    // 清空表单
+                    document.getElementById(`title${qaId}`).value = '';
+                    document.getElementById(`tags${qaId}`).value = '';
+                } else {
+                    alert('添加失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('添加到知识库失败:', error);
+                alert('添加失败，请重试');
+            }
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('recentModal');
+            if (event.target === modal) {
+                closeRecentModal();
+            }
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadModels();
+        });
+    </script>
+</body>
+</html>

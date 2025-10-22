@@ -1,0 +1,14 @@
+api:
+  base_url: "https://openai.qiniu.com/v1"
+  api_key: "API_KEY"
+
+server:
+  port: ":8080"
+  host: "localhost"
+
+models:
+  default: "claude-4.5-sonnet"
+  available:
+    - "claude-4.5-sonnet"
+    - "z-ai/glm-4.6"
+    - "deepseek/deepseek-v3.2-exp-thinking"
