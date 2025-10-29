@@ -52,8 +52,8 @@ go run ai.go
 或者编译后运行：
 
 ```bash
-go build -o qiniu-ai ai.go
-./qiniu-ai
+go build -o ai-assistant ai.go
+./ai-assistant
 ```
 
 ### 4. 访问服务

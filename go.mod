@@ -1,4 +1,4 @@
-module qiniu-ai
+module ai-assistant
 
 go 1.24.0
 
